@@ -1,0 +1,16 @@
+services:
+  qr-scanner:
+    build: .
+    container_name: qr-scanner
+    ports:
+      - "8443:8443"
+    environment:
+      # LAN-IP компьютера, чтобы открыть сканер с телефона: https://<IP>:8443
+      # Узнать: ipconfig → «IPv4-адрес». Можно задать в файле .env: HOST_IP=192.168.1.10
+      EXTRA_IPS: ${HOST_IP:-}
+    volumes:
+      - certs:/certs
+    restart: unless-stopped
+
+volumes:
+  certs:

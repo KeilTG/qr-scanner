@@ -1,0 +1,6 @@
+.git
+*.pem
+__pycache__/
+test_qr.png
+*.md
+.env
