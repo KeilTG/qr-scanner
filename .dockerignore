@@ -4,3 +4,4 @@ __pycache__/
 test_qr.png
 *.md
 .env
+.env.example

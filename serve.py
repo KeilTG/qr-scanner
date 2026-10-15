@@ -1,16 +1,12 @@
-"""HTTPS-сервер для QR-сканера: камера на телефоне работает только по HTTPS.
 
-Запуск: python serve.py   (из папки qr_scanner)
-При первом запуске создаёт самоподписанный сертификат cert.pem / key.pem.
-"""
 
-import http.server
 import os
 import socket
-import ssl
 import subprocess
 import sys
 from pathlib import Path
+
+import uvicorn
 
 PORT = int(os.environ.get("PORT", "8443"))
 ROOT = Path(__file__).resolve().parent
@@ -53,22 +49,14 @@ def main() -> None:
         except (OSError, subprocess.CalledProcessError) as e:
             sys.exit(f"Не удалось создать сертификат через openssl: {e}")
 
-    handler = lambda *a, **k: http.server.SimpleHTTPRequestHandler(*a, directory=str(ROOT), **k)  # noqa: E731
-    server = http.server.ThreadingHTTPServer(("0.0.0.0", PORT), handler)
-    context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
-    context.load_cert_chain(CERT, KEY)
-    server.socket = context.wrap_socket(server.socket, server_side=True)
-
-    print("QR-сканер запущен. Откройте в браузере:")
+    print("ФК — QR запущен. Откройте в браузере:")
     print(f"  на этом компьютере:  https://localhost:{PORT}")
     for ip in ips:
         print(f"  с телефона:          https://{ip}:{PORT}")
     print("Браузер предупредит о сертификате — это нормально: «Дополнительно» → «Перейти на сайт».")
     print("Остановка: Ctrl+C")
-    try:
-        server.serve_forever()
-    except KeyboardInterrupt:
-        pass
+    uvicorn.run("app.main:app", host="0.0.0.0", port=PORT, ssl_certfile=str(CERT), ssl_keyfile=str(KEY),
+                app_dir=str(ROOT), proxy_headers=True)
 
 
 if __name__ == "__main__":

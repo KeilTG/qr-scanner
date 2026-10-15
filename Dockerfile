@@ -6,7 +6,12 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-COPY index.html jsQR.js serve.py ./
+COPY requirements.txt ./
+RUN pip install --no-cache-dir --default-timeout=120 --retries 10 -r requirements.txt
+
+COPY serve.py ./
+COPY app ./app
+COPY static ./static
 
 # Сертификат храним вне раздаваемой папки, чтобы key.pem нельзя было скачать
 ENV PORT=8443 \

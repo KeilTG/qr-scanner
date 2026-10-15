@@ -1,10 +1,36 @@
 services:
+  db:
+    image: postgres:16-alpine
+    container_name: fk-db
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-fk}
+      POSTGRES_USER: ${POSTGRES_USER:-fk}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fk_password}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    # Порт наружу нужен только чтобы подключаться к БД с компьютера (DBeaver, pgAdmin, psql)
+    ports:
+      - "${POSTGRES_PORT:-5433}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
   qr-scanner:
     build: .
     container_name: qr-scanner
+    depends_on:
+      db:
+        condition: service_healthy
     ports:
       - "8443:8443"
     environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-fk}:${POSTGRES_PASSWORD:-fk_password}@db:5432/${POSTGRES_DB:-fk}
+      # Первый администратор системы создаётся при запуске, если его ещё нет
+      ADMIN_LOGIN: ${ADMIN_LOGIN:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
       # LAN-IP компьютера, чтобы открыть сканер с телефона: https://<IP>:8443
       # Узнать: ipconfig → «IPv4-адрес». Можно задать в файле .env: HOST_IP=192.168.1.10
       EXTRA_IPS: ${HOST_IP:-}
@@ -14,3 +40,4 @@ services:
 
 volumes:
   certs:
+  pgdata:
